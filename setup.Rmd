@@ -1,0 +1,43 @@
+---
+title: "NBA Graph"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Simple R Code
+
+We simply take a data set and generate team rosters for each year from it.
+
+```{r setup}
+library(tidyverse)
+library(dplyr)
+library(rvest)
+```
+
+```{r get_ROSTERS}
+
+for (year in 1950:2020) {
+  url <- paste("https://www.basketball-reference.com/leagues/NBA_", paste(year, "_totals.html#totals_stats::mp",sep=""), sep="")
+  all_stats <- url %>% read_html() %>% html_node(".stats_table") %>% html_table() %>% filter(Rk != "Rk")
+  plyrprofs <- url %>% read_html() %>% html_nodes("table") %>% html_nodes("tr") %>% html_node("a") %>% html_attr("href")
+  plyrprofs <- plyrprofs[!is.na(plyrprofs)]
+  all_stats <- cbind(all_stats, plyrprofs)
+  rosters <- all_stats %>% group_by(Tm) %>% summarize(roster = paste(plyrprofs, collapse = ", ")) %>% filter(Tm != 'TOT')
+  write.csv(rosters, paste(paste('rosters/', year, sep=''), 'rosters.csv', sep=''))
+}
+```
+
+```{r get_PLAYERS}
+
+for (name in letters) {
+  url <- paste("https://www.basketball-reference.com/players/", name, sep="")
+  plyrs <- url %>% read_html() %>% html_node(".stats_table") %>% html_table() %>% filter(From != "From") %>% select(1, 2, 3)
+  plyrprofs <- url %>% read_html() %>% html_nodes("table") %>% html_nodes("tr") %>% html_node("a") %>% html_attr("href")
+  plyrprofs <- plyrprofs[-1]
+  all_plyrs <- cbind(plyrs, plyrprofs)
+  write.csv(all_plyrs, paste(paste('players/', name, sep=''), 'players.csv', sep=''))
+}
+```
